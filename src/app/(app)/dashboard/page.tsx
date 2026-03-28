@@ -35,6 +35,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-text mt-0.5">
           {session.user.name}
         </h1>
+        <p>test</p>
       </div>
 
       {/* Groupe */}
