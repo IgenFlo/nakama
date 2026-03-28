@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && NEXT_PUBLIC_APP_VERSION=0.$(git rev-list --count HEAD) next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",

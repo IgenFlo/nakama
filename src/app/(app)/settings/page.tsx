@@ -43,6 +43,11 @@ export default async function SettingsPage() {
       </Card>
 
       <LogoutButton />
+
+      {/* Version */}
+      <p className="text-center text-xs text-text-muted pb-2">
+        v{process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}
+      </p>
     </div>
   );
 }
