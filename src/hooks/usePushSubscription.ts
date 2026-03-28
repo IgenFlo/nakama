@@ -9,6 +9,7 @@ export type PushState = {
   permission: PermissionState;
   subscribed: boolean;
   loading: boolean;
+  error: string | null;
   toggle: () => Promise<void>;
 };
 
@@ -24,13 +25,23 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return buffer;
 }
 
+// Timeout sur navigator.serviceWorker.ready (peut bloquer indéfiniment si le SW ne s'active pas)
+function swReady(timeoutMs = 8000): Promise<ServiceWorkerRegistration> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Service worker timeout — relance l'app et réessaie")), timeoutMs),
+    ),
+  ]);
+}
+
 export function usePushSubscription(): PushState {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<PermissionState>("default");
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Vérifier l'état initial au montage
   useEffect(() => {
     if (
       typeof window === "undefined" ||
@@ -45,7 +56,6 @@ export function usePushSubscription(): PushState {
     setSupported(true);
     setPermission(Notification.permission as PermissionState);
 
-    // Vérifier si une subscription existe déjà
     navigator.serviceWorker.ready
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => {
@@ -56,25 +66,24 @@ export function usePushSubscription(): PushState {
   }, []);
 
   const subscribe = useCallback(async () => {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await swReady();
 
-    // Demander la permission si pas encore accordée
     const perm = await Notification.requestPermission();
     setPermission(perm as PermissionState);
     if (perm !== "granted") return;
 
-    // Récupérer la clé VAPID publique
     const res = await fetch("/api/push/vapid-key");
-    const { publicKey } = (await res.json()) as { publicKey: string };
+    if (!res.ok) throw new Error(`Impossible de récupérer la clé VAPID (${res.status})`);
+    const { publicKey } = (await res.json()) as { publicKey: string | null };
+    if (!publicKey) throw new Error("Clé VAPID manquante — vérifie les variables d'environnement Vercel");
 
-    // Créer la subscription
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
 
     const json = sub.toJSON();
-    await fetch("/api/push/subscribe", {
+    const saveRes = await fetch("/api/push/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -82,12 +91,13 @@ export function usePushSubscription(): PushState {
         keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
       }),
     });
+    if (!saveRes.ok) throw new Error(`Erreur sauvegarde subscription (${saveRes.status})`);
 
     setSubscribed(true);
   }, []);
 
   const unsubscribe = useCallback(async () => {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await swReady();
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
 
@@ -103,16 +113,20 @@ export function usePushSubscription(): PushState {
 
   const toggle = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       if (subscribed) {
         await unsubscribe();
       } else {
         await subscribe();
       }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }, [subscribed, subscribe, unsubscribe]);
 
-  return { supported, permission, subscribed, loading, toggle };
+  return { supported, permission, subscribed, loading, error, toggle };
 }
