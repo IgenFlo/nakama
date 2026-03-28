@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
+/* ─── Brand palette ─────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-lavender: #dbd7ea;
+  --color-crimson-violet: #4c1036;
+  --color-seashell: #fef5ef;
+  --color-hunter-green: #3f6c51;
+  --color-onyx: #070e0d;
 }
 
+/* ─── Tailwind v4 theme tokens ───────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-lavender: var(--color-lavender);
+  --color-crimson-violet: var(--color-crimson-violet);
+  --color-seashell: var(--color-seashell);
+  --color-hunter-green: var(--color-hunter-green);
+  --color-onyx: var(--color-onyx);
+
+  /* Semantic aliases */
+  --color-bg: var(--color-seashell);
+  --color-bg-secondary: var(--color-lavender);
+  --color-primary: var(--color-crimson-violet);
+  --color-accent: var(--color-hunter-green);
+  --color-text: var(--color-onyx);
+  /* 60% pour un meilleur contraste WCAG sur les textes secondaires */
+  --color-text-muted: color-mix(in srgb, var(--color-onyx) 60%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base styles ────────────────────────────────────────────────────────── */
+html {
+  height: 100%;
+  /* Supprime le flash bleu au tap sur iOS */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background-color: var(--color-seashell);
+  color: var(--color-onyx);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Safe area iOS (notch / home indicator) ─────────────────────────────── */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+}
+
+/* ─── Focus visible (accessibilité clavier) ─────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-crimson-violet);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

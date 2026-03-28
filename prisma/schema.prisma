@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  FRIEND
+}
+
+enum LoverRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String?  @unique
+  phone        String?  @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         Role     @default(FRIEND)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  sentRequests      LoverRequest[]     @relation("SentRequests")
+  receivedRequests  LoverRequest[]     @relation("ReceivedRequests")
+  groupMembership   LoversGroupMember?
+  expenses          Expense[]
+  redAlerts         RedAlert[]
+  pushSubscriptions PushSubscription[]
+
+  @@map("users")
+}
+
+model LoverRequest {
+  id        String             @id @default(uuid()) @db.Uuid
+  fromId    String             @map("from_id") @db.Uuid
+  toId      String             @map("to_id") @db.Uuid
+  status    LoverRequestStatus @default(PENDING)
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  from User @relation("SentRequests", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("ReceivedRequests", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+  @@map("lover_requests")
+}
+
+model LoversGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  members         LoversGroupMember[]
+  expenseSubjects ExpenseSubject[]
+  redAlerts       RedAlert[]
+
+  @@map("lovers_groups")
+}
+
+model LoversGroupMember {
+  groupId  String   @map("group_id") @db.Uuid
+  userId   String   @unique @map("user_id") @db.Uuid
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group LoversGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@map("lovers_group_members")
+}
+
+model ExpenseSubject {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @map("group_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group    LoversGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@map("expense_subjects")
+}
+
+model Expense {
+  id          String   @id @default(uuid()) @db.Uuid
+  subjectId   String   @map("subject_id") @db.Uuid
+  paidById    String   @map("paid_by_id") @db.Uuid
+  amount      Decimal  @db.Decimal(10, 2)
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  subject ExpenseSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  paidBy  User           @relation(fields: [paidById], references: [id])
+
+  @@map("expenses")
+}
+
+model RedAlert {
+  id            String   @id @default(uuid()) @db.Uuid
+  groupId       String   @map("group_id") @db.Uuid
+  triggeredById String   @map("triggered_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  group       LoversGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  triggeredBy User        @relation(fields: [triggeredById], references: [id])
+
+  @@map("red_alerts")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  p256dh    String   @map("p256dh")
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}
