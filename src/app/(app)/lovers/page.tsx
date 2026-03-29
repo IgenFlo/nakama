@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-guard";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { UserRow, type RelationStatus } from "@/components/modules/UserRow";
 
 export default async function LoversPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   const meId = session.user.id;

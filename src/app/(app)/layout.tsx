@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/layout/BottomNav";
 import type { Role } from "@/generated/prisma/client";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   return (

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-guard";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { LoverRequestCard } from "@/components/modules/LoverRequestCard";
 
 export default async function LoverRequestsPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   const meId = session.user.id;

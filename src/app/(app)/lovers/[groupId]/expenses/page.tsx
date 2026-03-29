@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-guard";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
@@ -13,7 +13,7 @@ export default async function ExpensesPage({
 }: {
   params: Promise<{ groupId: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   const { groupId } = await params;

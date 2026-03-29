@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-guard";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -14,7 +14,7 @@ export default async function NavyPushPage({
 }: {
   params: Promise<{ groupId: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   const { groupId } = await params;

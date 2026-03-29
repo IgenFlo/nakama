@@ -1,5 +1,4 @@
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getSession } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { LogoutButton } from "@/components/ui/LogoutButton";
@@ -7,15 +6,12 @@ import { PushToggle } from "@/components/ui/PushToggle";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { name: true, email: true, phone: true },
-  });
-
-  const initial = user?.name?.charAt(0).toUpperCase() ?? "?";
+  const name = session.user.name ?? "Utilisateur";
+  const email = session.user.email;
+  const initial = name.charAt(0).toUpperCase();
 
   return (
     <div className="p-4 space-y-4">
@@ -27,12 +23,9 @@ export default async function SettingsPage() {
           {initial}
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-text truncate">{user?.name}</p>
-          {user?.email ? (
-            <p className="text-sm text-text-muted truncate">{user.email}</p>
-          ) : null}
-          {user?.phone ? (
-            <p className="text-sm text-text-muted truncate">{user.phone}</p>
+          <p className="font-semibold text-text truncate">{name}</p>
+          {email ? (
+            <p className="text-sm text-text-muted truncate">{email}</p>
           ) : null}
         </div>
       </Card>

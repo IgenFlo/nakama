@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { Role } from "@/generated/prisma/client";
@@ -10,10 +11,14 @@ type GuardOk<T> = { session: T; error: null };
 type GuardErr = { session: null; error: NextResponse };
 type GuardResult<T> = GuardOk<T> | GuardErr;
 
+// ─── Session dédupliquée par requête (React.cache) ──────────────────────────
+// Un seul appel auth() par render, même si layout + page l'appellent tous les deux.
+export const getSession = cache(() => auth());
+
 // ─── Pour les Route Handlers (retourne un tuple) ──────────────────────────────
 
 export async function getAuthSession(): Promise<GuardResult<AuthSession>> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return {
       session: null,
@@ -38,7 +43,7 @@ export async function getAdminSession(): Promise<GuardResult<AuthSession>> {
 // ─── Pour les Server Components / Server Actions (lance une erreur) ───────────
 
 export async function requireAuth(): Promise<AuthSession> {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) throw new Error("Unauthorized");
   return session as AuthSession;
 }
