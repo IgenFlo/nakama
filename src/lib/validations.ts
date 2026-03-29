@@ -42,7 +42,7 @@ export const expenseSchema = z.object({
   date: z.string().datetime().optional(),
 });
 
-export const redAlertSchema = z.object({
+export const navyPushSchema = z.object({
   groupId: z.string().uuid(),
   message: z.string().min(1, "Message requis").max(200, "200 caractères max"),
 });

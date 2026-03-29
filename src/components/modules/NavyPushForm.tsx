@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 
 interface NavyPushFormProps {
@@ -8,6 +9,7 @@ interface NavyPushFormProps {
 }
 
 export function NavyPushForm({ groupId }: NavyPushFormProps) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -47,6 +49,8 @@ export function NavyPushForm({ groupId }: NavyPushFormProps) {
 
         if (cooldownRef.current) clearTimeout(cooldownRef.current);
         cooldownRef.current = setTimeout(() => setFeedback(null), 4000);
+
+        router.refresh();
       }
     } catch {
       setFeedback({ type: "error", text: "Erreur réseau" });

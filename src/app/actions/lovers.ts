@@ -193,3 +193,49 @@ export async function updateGroupNameAction(
   revalidatePath("/dashboard");
   return {};
 }
+
+// ─── Historique des Navy Push ─────────────────────────────────────────────────
+
+const NAVY_PUSH_PAGE_SIZE = 20;
+
+export type NavyPushItem = {
+  id: string;
+  message: string | null;
+  createdAt: string;
+  triggeredBy: { id: string; name: string };
+};
+
+export async function getNavyPushHistoryAction(
+  groupId: string,
+  cursor?: string,
+): Promise<{ items: NavyPushItem[]; nextCursor: string | null; error?: string }> {
+  const session = await requireAuth();
+
+  const membership = await db.loversGroupMember.findUnique({
+    where: { userId: session.user.id },
+  });
+  if (!membership || membership.groupId !== groupId) {
+    return { items: [], nextCursor: null, error: "Accès refusé" };
+  }
+
+  const results = await db.navyPush.findMany({
+    where: { groupId },
+    take: NAVY_PUSH_PAGE_SIZE + 1,
+    orderBy: { createdAt: "desc" },
+    include: { triggeredBy: { select: { id: true, name: true } } },
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+  });
+
+  const hasMore = results.length > NAVY_PUSH_PAGE_SIZE;
+  const items = (hasMore ? results.slice(0, NAVY_PUSH_PAGE_SIZE) : results).map((r) => ({
+    id: r.id,
+    message: r.message,
+    createdAt: r.createdAt.toISOString(),
+    triggeredBy: r.triggeredBy,
+  }));
+
+  return {
+    items,
+    nextCursor: hasMore ? items[items.length - 1].id : null,
+  };
+}

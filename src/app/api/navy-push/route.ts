@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getAuthSession } from "@/lib/auth-guard";
-import { redAlertSchema } from "@/lib/validations";
+import { navyPushSchema } from "@/lib/validations";
 import { sendPushNotification } from "@/lib/push";
 
-const RATE_LIMIT_MS = 10_000; // 10 secondes
+const RATE_LIMIT_MS = 10_000;
 
 export async function POST(request: Request) {
   const { session, error } = await getAuthSession();
   if (error) return error;
 
   const body = await request.json();
-  const parsed = redAlertSchema.safeParse(body);
+  const parsed = navyPushSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0].message },
@@ -22,7 +23,6 @@ export async function POST(request: Request) {
   const { groupId, message } = parsed.data;
   const userId = session.user.id;
 
-  // Vérifier que l'utilisateur est membre du groupe
   const membership = await db.loversGroupMember.findUnique({
     where: { userId },
   });
@@ -30,13 +30,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
-  // Rate limit : un Navy Push par groupe toutes les 10 secondes
-  const lastAlert = await db.redAlert.findFirst({
+  const lastPush = await db.navyPush.findFirst({
     where: { groupId },
     orderBy: { createdAt: "desc" },
   });
-  if (lastAlert) {
-    const elapsed = Date.now() - lastAlert.createdAt.getTime();
+  if (lastPush) {
+    const elapsed = Date.now() - lastPush.createdAt.getTime();
     if (elapsed < RATE_LIMIT_MS) {
       const remaining = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000);
       return NextResponse.json(
@@ -46,12 +45,10 @@ export async function POST(request: Request) {
     }
   }
 
-  // Enregistrer l'alerte
-  await db.redAlert.create({
-    data: { groupId, triggeredById: userId },
+  await db.navyPush.create({
+    data: { groupId, triggeredById: userId, message },
   });
 
-  // Récupérer les subscriptions push de tous les membres du groupe (sauf l'expéditeur)
   const subscriptions = await db.pushSubscription.findMany({
     where: {
       user: {
@@ -61,7 +58,6 @@ export async function POST(request: Request) {
     },
   });
 
-  // Envoyer les notifications en parallèle (erreurs silencieuses par subscription)
   const senderName = session.user.name ?? "Quelqu'un";
   const pushResults = subscriptions.map((sub) =>
     sendPushNotification(
@@ -75,6 +71,8 @@ export async function POST(request: Request) {
   );
 
   await Promise.all(pushResults);
+
+  revalidatePath(`/lovers/${groupId}/navy-push`);
 
   return NextResponse.json({ success: true, sent: subscriptions.length });
 }

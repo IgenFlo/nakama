@@ -5,6 +5,9 @@ import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { NavyPushForm } from "@/components/modules/NavyPushForm";
+import { NavyPushHistory } from "@/components/modules/NavyPushHistory";
+
+const PAGE_SIZE = 20;
 
 export default async function NavyPushPage({
   params,
@@ -33,6 +36,22 @@ export default async function NavyPushPage({
     .filter((m) => m.userId !== meId)
     .map((m) => m.user.name);
 
+  const pushResults = await db.navyPush.findMany({
+    where: { groupId },
+    take: PAGE_SIZE + 1,
+    orderBy: { createdAt: "desc" },
+    include: { triggeredBy: { select: { id: true, name: true } } },
+  });
+
+  const hasMore = pushResults.length > PAGE_SIZE;
+  const initialItems = (hasMore ? pushResults.slice(0, PAGE_SIZE) : pushResults).map((r) => ({
+    id: r.id,
+    message: r.message,
+    createdAt: r.createdAt.toISOString(),
+    triggeredBy: r.triggeredBy,
+  }));
+  const initialNextCursor = hasMore ? initialItems[initialItems.length - 1].id : null;
+
   return (
     <div className="p-4 space-y-4">
       <PageHeader title="Navy Push" backHref={`/lovers/${groupId}`} />
@@ -60,6 +79,12 @@ export default async function NavyPushPage({
       <Card>
         <NavyPushForm groupId={groupId} />
       </Card>
+
+      <NavyPushHistory
+        groupId={groupId}
+        initialItems={initialItems}
+        initialNextCursor={initialNextCursor}
+      />
     </div>
   );
 }

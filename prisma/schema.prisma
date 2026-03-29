@@ -31,7 +31,7 @@ model User {
   receivedRequests  LoverRequest[]     @relation("ReceivedRequests")
   groupMembership   LoversGroupMember?
   expenses          Expense[]
-  redAlerts         RedAlert[]
+  navyPushes        NavyPush[]
   pushSubscriptions PushSubscription[]
 
   @@map("users")
@@ -58,7 +58,7 @@ model LoversGroup {
 
   members         LoversGroupMember[]
   expenseSubjects ExpenseSubject[]
-  redAlerts       RedAlert[]
+  navyPushes      NavyPush[]
 
   @@map("lovers_groups")
 }
@@ -102,16 +102,17 @@ model Expense {
   @@map("expenses")
 }
 
-model RedAlert {
+model NavyPush {
   id            String   @id @default(uuid()) @db.Uuid
   groupId       String   @map("group_id") @db.Uuid
   triggeredById String   @map("triggered_by_id") @db.Uuid
+  message       String?
   createdAt     DateTime @default(now()) @map("created_at")
 
   group       LoversGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   triggeredBy User        @relation(fields: [triggeredById], references: [id])
 
-  @@map("red_alerts")
+  @@map("navy_pushes")
 }
 
 model PushSubscription {
