@@ -25,7 +25,6 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return buffer;
 }
 
-// Timeout sur navigator.serviceWorker.ready (peut bloquer indéfiniment si le SW ne s'active pas)
 function swReady(timeoutMs = 8000): Promise<ServiceWorkerRegistration> {
   return Promise.race([
     navigator.serviceWorker.ready,
@@ -43,11 +42,14 @@ export function usePushSubscription(): PushState {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("[Push] init check...");
+
     if (
       typeof window === "undefined" ||
       !("serviceWorker" in navigator) ||
       !("PushManager" in window)
     ) {
+      console.log("[Push] not supported");
       setSupported(false);
       setLoading(false);
       return;
@@ -55,32 +57,53 @@ export function usePushSubscription(): PushState {
 
     setSupported(true);
     setPermission(Notification.permission as PermissionState);
+    console.log("[Push] supported, permission:", Notification.permission);
+
+    // Timeout pour ne pas bloquer loading indéfiniment si le SW n'est pas prêt
+    const timeout = setTimeout(() => {
+      console.log("[Push] SW ready timeout — setting loading=false anyway");
+      setLoading(false);
+    }, 3000);
 
     navigator.serviceWorker.ready
-      .then((reg) => reg.pushManager.getSubscription())
+      .then((reg) => {
+        console.log("[Push] SW ready, checking subscription...");
+        return reg.pushManager.getSubscription();
+      })
       .then((sub) => {
+        clearTimeout(timeout);
+        console.log("[Push] existing subscription:", !!sub);
         setSubscribed(!!sub);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        clearTimeout(timeout);
+        console.error("[Push] init error:", err);
+        setLoading(false);
+      });
   }, []);
 
   const subscribe = useCallback(async () => {
+    console.log("[Push] subscribing...");
     const reg = await swReady();
+    console.log("[Push] SW ready for subscribe");
 
     const perm = await Notification.requestPermission();
+    console.log("[Push] permission result:", perm);
     setPermission(perm as PermissionState);
     if (perm !== "granted") return;
 
     const res = await fetch("/api/push/vapid-key");
     if (!res.ok) throw new Error(`Impossible de récupérer la clé VAPID (${res.status})`);
     const { publicKey } = (await res.json()) as { publicKey: string | null };
+    console.log("[Push] VAPID key received:", !!publicKey);
     if (!publicKey) throw new Error("Clé VAPID manquante — vérifie les variables d'environnement Vercel");
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
+    console.log("[Push] subscribed to push manager");
 
     const json = sub.toJSON();
     const saveRes = await fetch("/api/push/subscribe", {
@@ -92,11 +115,13 @@ export function usePushSubscription(): PushState {
       }),
     });
     if (!saveRes.ok) throw new Error(`Erreur sauvegarde subscription (${saveRes.status})`);
+    console.log("[Push] subscription saved to server");
 
     setSubscribed(true);
   }, []);
 
   const unsubscribe = useCallback(async () => {
+    console.log("[Push] unsubscribing...");
     const reg = await swReady();
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
@@ -109,9 +134,11 @@ export function usePushSubscription(): PushState {
 
     await sub.unsubscribe();
     setSubscribed(false);
+    console.log("[Push] unsubscribed");
   }, []);
 
   const toggle = useCallback(async () => {
+    console.log("[Push] toggle clicked! subscribed:", subscribed, "loading:", loading);
     setLoading(true);
     setError(null);
     try {
@@ -122,11 +149,12 @@ export function usePushSubscription(): PushState {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      console.error("[Push] toggle error:", msg);
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [subscribed, subscribe, unsubscribe]);
+  }, [subscribed, loading, subscribe, unsubscribe]);
 
   return { supported, permission, subscribed, loading, error, toggle };
 }
