@@ -82,13 +82,14 @@ Schéma dans `prisma/schema.prisma`. Tables SQL mappées en snake_case (`@@map`)
 - La formation de groupe lors de l'acceptation d'une requête est transactionnelle (priorité : groupe expéditeur → groupe receveur → nouveau groupe)
 - Le nom de groupe par défaut est "les chouquettes onctueuses"
 - `src/generated/prisma` est dans `.gitignore` → le build Vercel fait `prisma generate` avant `next build`
+- **Stratégie de migration : `db push`** pour le moment. À chaque changement de schéma, demander à l'utilisateur s'il veut passer à `migrate dev` / `migrate deploy`
 
 ## Déploiement
 
 - **Hosting :** Vercel (free tier)
 - **BDD :** Neon PostgreSQL (free tier, URL pooled)
 - **GitHub :** compte IgenFlo (SSH key `floehr` via alias `github.com-floehr`)
-- **Build script :** `prisma generate && NEXT_PUBLIC_APP_VERSION=0.$(git rev-list --count HEAD) next build`
+- **Build script :** `prisma generate && prisma db push --skip-generate && serwist build && NEXT_PUBLIC_APP_VERSION=0.$(git rev-list --count HEAD) next build`
 - **Version :** auto-incrémentée au nombre de commits, affichée dans Settings (format `v0.X`)
 
 ### Variables d'environnement Vercel requises

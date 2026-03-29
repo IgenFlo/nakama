@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -p none \"serwist build --watch\" \"next dev\"",
-    "build": "prisma generate && serwist build && NEXT_PUBLIC_APP_VERSION=0.$(git rev-list --count HEAD) next build",
+    "build": "prisma generate && prisma db push --skip-generate && serwist build && NEXT_PUBLIC_APP_VERSION=0.$(git rev-list --count HEAD) next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
