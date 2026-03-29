@@ -81,6 +81,7 @@ export default async function NavyPushPage({
       </Card>
 
       <NavyPushHistory
+        key={initialItems[0]?.id ?? "empty"}
         groupId={groupId}
         initialItems={initialItems}
         initialNextCursor={initialNextCursor}

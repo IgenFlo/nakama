@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { getNavyPushHistoryAction, type NavyPushItem } from "@/app/actions/lovers";
@@ -34,12 +34,6 @@ export function NavyPushHistory({
   const [items, setItems] = useState(initialItems);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
-
-  // Sync avec les nouvelles props du server component (après router.refresh())
-  useEffect(() => {
-    setItems(initialItems);
-    setNextCursor(initialNextCursor);
-  }, [initialItems, initialNextCursor]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loadingMore) return;
