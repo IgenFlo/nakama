@@ -1,31 +1,30 @@
 "use server";
 
-import { signIn, signOut } from "@/lib/auth";
-import { AuthError } from "next-auth";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { APIError } from "better-auth/api";
 
 export async function loginAction(
-  identifier: string,
+  email: string,
   password: string,
-): Promise<{ error: string } | never> {
+): Promise<{ error: string }> {
   try {
-    await signIn("credentials", {
-      identifier,
-      password,
-      redirectTo: "/dashboard",
+    await auth.api.signInEmail({
+      body: { email, password },
+      headers: await headers(),
     });
   } catch (error) {
-    // next-auth relance NEXT_REDIRECT pour déclencher la navigation —
-    // il faut le laisser remonter, c'est le chemin "succès".
-    if (error instanceof AuthError) {
+    if (error instanceof APIError) {
       return { error: "Identifiants incorrects" };
     }
     throw error;
   }
 
-  // TypeScript : unreachable (signIn redirige toujours ou lance)
-  return { error: "Erreur inattendue" };
+  redirect("/dashboard");
 }
 
 export async function logoutAction() {
-  await signOut({ redirectTo: "/login" });
+  await auth.api.signOut({ headers: await headers() });
+  redirect("/login");
 }

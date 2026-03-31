@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { loginAction } from "@/app/actions/auth";
 
 export function LoginForm() {
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const result = await loginAction(identifier, password);
+    const result = await loginAction(email, password);
 
     // Si on arrive ici c'est qu'il y a eu une erreur —
     // en cas de succès, la server action redirige et cette ligne n'est jamais atteinte.
@@ -27,15 +27,15 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        id="identifier"
-        label="Email ou téléphone"
-        type="text"
-        autoComplete="username"
+        id="email"
+        label="Email"
+        type="email"
+        autoComplete="email"
         autoCapitalize="none"
         autoCorrect="off"
         spellCheck={false}
-        value={identifier}
-        onChange={(e) => setIdentifier(e.target.value)}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         required
       />
       <Input

@@ -51,11 +51,21 @@ export async function POST(request: Request) {
         name: (body.name as string).trim(),
         email,
         phone,
-        passwordHash,
         role: "FRIEND",
       },
       select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
     });
+
+    await db.account.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: passwordHash,
+      },
+    });
+
     return NextResponse.json(user, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Email ou téléphone déjà utilisé" }, { status: 409 });

@@ -17,16 +17,31 @@ async function main() {
 
   const passwordHash = await bcryptjs.hash(password, 12);
 
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { email },
     update: {},
     create: {
       email,
       name,
-      passwordHash,
       role: "ADMIN",
     },
   });
+
+  const existingAccount = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: "credential" },
+  });
+
+  if (!existingAccount) {
+    await prisma.account.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: passwordHash,
+      },
+    });
+  }
 
   console.log(`Admin user seeded: ${email}`);
 }

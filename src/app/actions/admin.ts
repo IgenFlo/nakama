@@ -34,15 +34,25 @@ export async function createUserAction(data: {
   const passwordHash = await bcryptjs.hash(data.password, 12);
 
   try {
-    await db.user.create({
+    const user = await db.user.create({
       data: {
         name: data.name.trim(),
         email,
         phone,
-        passwordHash,
         role: "FRIEND",
       },
     });
+
+    await db.account.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: passwordHash,
+      },
+    });
+
     return { success: true };
   } catch {
     return { error: "Email ou téléphone déjà utilisé" };
@@ -67,10 +77,11 @@ export async function resetPasswordAction(
   const passwordHash = await bcryptjs.hash(password, 12);
 
   try {
-    await db.user.update({
-      where: { id: userId },
-      data: { passwordHash },
+    await db.account.updateMany({
+      where: { userId, providerId: "credential" },
+      data: { password: passwordHash },
     });
+
     return { success: true };
   } catch {
     return { error: "Utilisateur introuvable" };

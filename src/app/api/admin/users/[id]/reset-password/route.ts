@@ -25,10 +25,11 @@ export async function PATCH(
   const passwordHash = await bcryptjs.hash(parsed.data.password, 12);
 
   try {
-    await db.user.update({
-      where: { id },
-      data: { passwordHash },
+    await db.account.updateMany({
+      where: { userId: id, providerId: "credential" },
+      data: { password: passwordHash },
     });
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
