@@ -25,8 +25,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/icons/icon-192x192.png",
-      badge: "/icons/icon-192x192.png",
+      icon: "/logo-carre.png",
+      badge: "/logo-carre.png",
       tag: "nakama-alert",
       vibrate: [200, 100, 200],
       data: { url: data.url ?? "/dashboard" },

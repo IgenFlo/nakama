@@ -8,7 +8,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center gap-3">
         <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(76,16,54,0.2)]">
           <Image
-            src="/apple-touch-icon.png"
+            src="/logo-carre.png"
             alt="Nakama"
             width={80}
             height={80}
@@ -19,7 +19,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-primary tracking-tight">
             Nakama
           </h1>
-          <p className="mt-0.5 text-sm text-text-muted">Notre espace à nous</p>
         </div>
       </div>
 

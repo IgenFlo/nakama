@@ -4,11 +4,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Nakama",
-  description: "Notre espace à nous",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/logo-carre.png",
+    apple: "/logo-carre.png",
   },
   appleWebApp: {
     capable: true,
@@ -24,7 +23,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="fr" className="h-full">
       <body className="min-h-full flex flex-col">
